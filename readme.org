@@ -460,10 +460,15 @@ elsif @dir == :right then
 end
 #+END_SRC
 
-This is only a temporary solution, but it works. If you'll start your game, you'll see that our character now faces the direction it's moving! Now we can start our animation. We will make a walking and standing animation. We will need these four graphics: download from https://corruptgd.wordpress.com/tutorials-creating-a-platformer-in-ruby-gosu/tutorial-2-introducing-scenes-player/
+This is only a temporary solution, but it works. If you'll start your game, you'll see that our character now faces the direction it's moving! Now we can start our animation. We will make a walking and standing animation. We will need these four graphics: 
 
-[[./pic/images.png]]
+[[./graphics/sprites/player_1_standby_left.png]]
 
+[[./graphics/sprites/player_1_standby_right.png]]
+
+[[./graphics/sprites/player_1_run_right.png]]
+
+[[./graphics/sprites/player_1_run_left.png]]
 
 As you can see, they're not exactly a one sprite, but a bunch of sprites in one graphic. Thankfully, Gosu::Image provides us with a suitable method. We will use four variables, two of which already exist: @stand_right, @stand_left, @walk_right, @walk_left. To create them we will use a Gosu::Image#load_tiles method, which takes 5 arguments: Gosu::Window, path/to/file, width, height, tile-ability. Width and Height are of individual sprite. Putting a negative value will divide the image by this amount (let's say putting a -4,-4 will divide our spritesheet into 16 equal sprites). Single frame of our character is 32¡Á32 pixels, so we'll use this value:
 
@@ -1366,7 +1371,11 @@ for i in 0...@objects.size
 end
 #+END_SRC
 
-Now you can place our player on the map. But if you'll place it again, you may notice that we've got two players. We have to do something about that. Let's go back to #place_object and put this on the top:
+Now you can place our player on the map. But if you'll place it again, you may notice that we've got two players. as shown in the followed pics: 
+
+[[./pic/12-25.png]]
+
+We have to do something about that. Let's go back to #place_object and put this on the top:
 
 #+BEGIN_SRC ruby
 if @object_held == :player then

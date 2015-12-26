@@ -39,18 +39,6 @@ class SceneEditor
         @object_held = nil
     end
 
-    def select_object(object)
-        @object_held = object
-        @active_mode = :objects
-        @sel_32_x = 768
-    end
-    
-    def update
-        if $window.button_down?(MsLeft) and $window.mouse_x.between?(368, 1008) and $window.mouse_y.between?(160, 640) then
-            place_tile($window.mouse_x, $window.mouse_y)
-        end
-    end
-
     def draw
         @bg.draw(0, 0, 0)
         @grid.draw(368, 160, 5)
@@ -90,17 +78,87 @@ class SceneEditor
                 case @objects[i][0]
                 when :player
                     frame = milliseconds / 150 % @player_graphic.size
-                    rx = @object[i][1] - (@offset_x * 16) + 368
-                    ry = @object[i][2] - (@offset_y * 16) + 160
+                    rx = @objects[i][1] - (@offset_x * 16) + 368
+                    ry = @objects[i][2] - (@offset_y * 16) + 160
                     @player_graphic[frame].draw(rx, ry, 6)
                 end
             end
         when :player
-=end
-        if @object_held == :player
             @player_graphic[0].draw($window.mouse_x, $window.mouse_y, 10)
         end
+=end
+        for i in 0...@objects.size
+            case @objects[i][0]
+            when :player
+                frame = milliseconds / 150 % @player_graphic.size
+                rx = @objects[i][1] - (@offset_x * 16) + 368
+                ry = @objects[i][2] - (@offset_y * 16) + 160
+                @player_graphic[frame].draw(rx, ry, 6)
+            end
+        end
 
+    end
+
+    def select_object(object)
+        @object_held = object
+        @active_mode = :objects
+        @sel_32_x = 768
+    end
+    
+    def place_object(x, y)
+        if @object_held == :player then
+            for i in 0...@objects.size
+                if @objects[i][0] == :player
+                    @objects.delete_at(i)
+                end
+            end
+        end
+
+        rx = x + (@offset_x * 16) - 368
+        ry = y + (@offset_y * 16) - 160
+        @objects << [@object_held, rx, ry]
+        if @object_held == :player then
+            @object_held = nil
+        end
+    end
+
+    def click
+        if $window.mouse_x.between?(16, 336) and $window.mouse_y.between?(112, 304) then
+            select_tile($window.mouse_x, $window.mouse_y)
+        elsif $window.mouse_x.between?(368, 1008) and $window.mouse_y.between?(160, 640) then
+#            p "map"    ###################################################### what should I change here?
+            if @active_mode == :map then
+                place_tile($window.mouse_x, $window.mouse_y)
+            elsif @active_mode == :objects then
+                place_object($window.mouse_x, $window.mouse_y)
+            end
+        elsif $window.mouse_x.between?(32, 64) and $window.mouse_y.between?(352, 384) then
+            select_object(:player)
+        elsif $window.mouse_x.between?(560, 600) and $window.mouse_y.between?(112, 144) then
+            save
+        elsif $window.mouse_x.between?(672, 704) and $window.mouse_y.between?(112, 144) then
+            @current_layer = 0
+            @sel_32_x = 672
+        elsif $window.mouse_x.between?(720, 752) and $window.mouse_y.between?(112, 144) then
+            @current_layer = 1
+            @sel_32_x = 720
+        end
+    end
+
+    def select_tile(x, y)
+        tx = ((x - 16) / 16).floor
+        ty = ((y - 112) / 16).floor
+        i = tx + (ty * 20)
+        @sel_16_x = (tx * 16) + 16
+        @sel_16_y = (ty * 16) + 112
+        @select_tile = i
+        @active_mode = :map
+    end
+
+    def place_tile(x, y)  
+        tx = ((x - 368) / 16).floor + @offset_x
+        ty = ((y - 160) / 16).floor + @offset_y
+        @level[@current_layer][ty][tx] = @select_tile
     end
 
     def button_down(id)
@@ -138,6 +196,14 @@ class SceneEditor
         end
     end
 
+    def save
+        f = File.new("Map000.map", "w+")
+        Marshal.dump(@used_tileset, f)
+        Marshal.dump(@level, f)
+        Marshal.dump(@objects, f)
+        f.close
+    end
+
     def increase_offset(forced = false)
         if @ctrl_held or forced then
             @offset_x += 1 if (@offset_x < @level[0][0].size - 40)
@@ -156,79 +222,10 @@ class SceneEditor
         end
     end
     
-    def click
-        if $window.mouse_x.between?(16, 336) and $window.mouse_y.between?(112, 304) then
-            select_tile($window.mouse_x, $window.mouse_y)
-        elsif $window.mouse_x.between?(368, 1008) and $window.mouse_y.between?(160, 640) then
-            p "map"
-        elsif $window.mouse_x.between?(32, 64) and $window.mouse_y.between?(352, 384) then
-            select_object(:player)
-        elsif $window.mouse_x.between?(560, 600) and $window.mouse_y.between?(112, 144) then
-            save
-        elsif $window.mouse_x.between?(672, 704) and $window.mouse_y.between?(112, 144) then
-            @current_layer = 0
-            @sel_32_x = 672
-        elsif $window.mouse_x.between?(720, 752) and $window.mouse_y.between?(112, 144) then
-            @current_layer = 1
-            @sel_32_x = 720
-        end
-
-        if @active_mode == :map then
+    def update
+        if $window.button_down?(MsLeft) and $window.mouse_x.between?(368, 1008) and $window.mouse_y.between?(160, 640) then
             place_tile($window.mouse_x, $window.mouse_y)
-        elsif @active_mode == :objects then
-            place_object($window.mouse_x, $window.mouse_y)
         end
     end
 
-    def place_object(x, y)
-        rx = x + (@offset_x * 16) - 368
-        ry = y + (@offset_y * 16) - 160
-        @objects << [@object_held, rx, ry]
-        if @object_held == :player then
-            @object_held = nil
-=begin            
-            for i in 0...@objects.size
-                case @objects[i][0]
-                when :player
-                    frame = milliseconds / 150 % @player_graphic.size
-                    rx = @objects[i][1] - (@offset_x * 16) + 368
-                    ry = @objects[i][2] - (@offset_y * 16) + 160
-                    @player_graphic[frame].draw(rx, ry, 6)
-                end
-            end
-=end
-        end
-        if @object_held == :player then
-            for i in 0...@objects.size
-                if @objects[i][0] == :player
-                    @objects.delete_at(i)
-                end
-            end
-        end
-    end
-
-    def select_tile(x, y)
-        tx = ((x - 16) / 16).floor
-        ty = ((y - 112) / 16).floor
-        i = tx + (ty * 20)
-        @sel_16_x = (tx * 16) + 16
-        @sel_16_y = (ty * 16) + 112
-        @select_tile = i
-        @active_mode = :map
-    end
-
-    def place_tile(x, y)  
-        tx = ((x - 368) / 16).floor + @offset_x
-        ty = ((y - 160) / 16).floor + @offset_y
-        @level[@current_layer][ty][tx] = @select_tile
-    end
-
-    def save
-        f = File.new("Map000.map", "w+")
-        Marshal.dump(@used_tileset, f)
-        Marshal.dump(@level, f)
-        Marshal.dump(@objects, f)
-        f.close
-    end
-    
 end
